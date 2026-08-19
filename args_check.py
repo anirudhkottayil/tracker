@@ -2,6 +2,8 @@ from pathlib import Path
 import datetime as dt
 from utils import add_topic
 from picker import ui
+from period_flag import get_period_data
+from period_flag import period_bounds
 import curses
 import sql_commands
 import sqlite3
@@ -117,12 +119,17 @@ def args_run(args,TRACKER_DIR, is_db):
     elif is_db == 0:
         print("No db initialised. (Run --init)")
         return
+
     if is_db == 1:
         if args.start:
             start(TRACKER_DIR)
+            return 0
         if args.stop:
             stop(TRACKER_DIR)
-        return 1
+        bounds = period_bounds(args)
+        if bounds:
+            get_period_data(TRACKER_DIR, bounds, args)
+            return 0
     else:
         print("No db initialised")
     return 0
