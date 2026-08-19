@@ -1,12 +1,11 @@
+from utils import add_topic, confirm, pick_topic
+from period_flag import get_period_data, period_bounds
+from edits import delete_session, edit_session
 from pathlib import Path
-import datetime as dt
-from utils import add_topic, confirm
-from picker import ui
-from period_flag import get_period_data
-from period_flag import period_bounds
 import curses
 import sql_commands
 import sqlite3
+import datetime as dt
 
 def init(TRACKER_DIR) -> int:
     (TRACKER_DIR / "db/").mkdir(parents=True, exist_ok=True)
@@ -42,30 +41,6 @@ def format_duration(delta: dt.timedelta) -> str:
     if hours:
         return f"{hours} hr{'s' if hours != 1 else ''}"
     return f"{minutes} min{'s' if minutes != 1 else ''}"
-
-def pick_topic(connector):
-    cursor = connector.cursor()
-    cursor.execute(sql_commands.TOPICS_BY_RECENCY)
-    rows = cursor.fetchall()
-    topics = []
-    topic_id = -1
-    for i in range(len(rows)):
-        topics.append(rows[i][1])
-    if topics == []:
-        print("No topics to choose from. Please add a new topic")
-        topic_id = add_topic(topics, connector) 
-    else:
-    # Use picker to get topic id
-        topics.append("Add topic")
-        idx = curses.wrapper(ui, topics)
-        if idx == -1:
-            return 1
-        if idx == len(topics) - 1:
-            topic_id = add_topic(topics, connector)
-        else:
-            topic_id = rows[idx][0]
-    cursor.close()
-    return topic_id
 
 
 def stop(TRACKER_DIR):
@@ -120,13 +95,16 @@ def args_run(args,TRACKER_DIR, is_db):
     if is_db == 1:
         if args.start:
             start(TRACKER_DIR)
-            return 0
-        if args.stop:
+        elif args.stop:
             stop(TRACKER_DIR)
+        elif args.edit is not None:
+            edit_session(TRACKER_DIR, args.edit) 
+        elif args.delete is not None:
+            delete_session(TRACKER_DIR, args.delete)
         bounds = period_bounds(args)
         if bounds:
             get_period_data(TRACKER_DIR, bounds, args)
-            return 0
+        return 0
     else:
         print("No db initialised")
     return 0

@@ -1,14 +1,16 @@
 import difflib
-from sql_commands import INSERT_TOPIC
 import sqlite3
+import sql_commands
+import curses
+from picker import ui
 
 def confirm(prompt:str):
     while True:
-    user_input = input(f"{prompt} (y/n)").strip().lower()
-    if user_input == 'y':
-        return True
-    if user_input == 'n':
-        return False
+        user_input = input(f"{prompt} (y/n)").strip().lower()
+        if user_input == 'y':
+            return True
+        if user_input == 'n':
+            return False
 
 def add_topic(topics=None, connector = None):
     topic = input("Enter new topic: ")
@@ -28,7 +30,7 @@ def add_topic(topics=None, connector = None):
     topic_id = -1
     try:
         curr = connector.cursor()
-        curr.execute(INSERT_TOPIC, (topic,))
+        curr.execute(sql_commands.INSERT_TOPIC, (topic,))
         topic_id = curr.lastrowid
         connector.commit()
         curr.close()
@@ -40,6 +42,29 @@ def add_topic(topics=None, connector = None):
             curr.close()
     return topic_id
 
-                
+def pick_topic(connector):
+    cursor = connector.cursor()
+    cursor.execute(sql_commands.TOPICS_BY_RECENCY)
+    rows = cursor.fetchall()
+    topics = []
+    topic_id = -1
+    for i in range(len(rows)):
+        topics.append(rows[i][1])
+    if topics == []:
+        print("No topics to choose from. Please add a new topic")
+        topic_id = add_topic(topics, connector) 
+    else:
+    # Use picker to get topic id
+        topics.append("Add topic")
+        idx = curses.wrapper(ui, topics)
+        if idx == -1:
+            return 1
+        if idx == len(topics) - 1:
+            topic_id = add_topic(topics, connector)
+        else:
+            topic_id = rows[idx][0]
+    cursor.close()
+    return topic_id
+
 
 
