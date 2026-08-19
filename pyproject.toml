@@ -1,0 +1,23 @@
+[project]
+name = "tracker"
+version = "1.0.0"
+description = "Personal CLI time tracker"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "rich",
+    "windows-curses; sys_platform == 'win32'",
+]
+
+[project.scripts]
+tracker = "tracker.main:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tracker = ["schema.sql"]
