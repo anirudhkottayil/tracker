@@ -96,6 +96,7 @@ def get_period_data(TRACKER_DIR, bounds, args):
 
     try:
         with sqlite3.connect((TRACKER_DIR / "db/tracker.db")) as connector:
+            connector.execute("PRAGMA foreign_keys = ON")
             cursor = connector.cursor()
             command = sql_commands.SESSIONS_BY_RANGE if args.list else sql_commands.SESSIONS_AGGREGATED_BY_RANGE
             cursor.execute(command, (start, end))
@@ -103,6 +104,8 @@ def get_period_data(TRACKER_DIR, bounds, args):
             if rows == []:
                 print("No sessions to show in this period")
                 return 1
+            if args.list and args.graph:
+                print("Use just --graph to see the graph")
             if args.list:
                 display_list(rows)
             elif args.graph:
@@ -111,7 +114,7 @@ def get_period_data(TRACKER_DIR, bounds, args):
                 display_table(rows)
 
     except sqlite3.OperationalError as e:
-        print(f"Failed to insert session: {e}")
+        print(f"Failed to get sessions: {e}")
         return 1
     finally:
         if connector:

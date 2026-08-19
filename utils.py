@@ -2,7 +2,17 @@ import difflib
 import sqlite3
 import sql_commands
 import curses
+import datetime as dt
 from picker import ui
+
+def format_duration(delta: dt.timedelta) -> str:
+    total_minutes = int(delta.total_seconds()) // 60
+    hours, minutes = divmod(total_minutes, 60)
+    if hours and minutes:
+        return f"{hours} hr{'s' if hours != 1 else ''} and {minutes} min{'s' if minutes != 1 else ''}"
+    if hours:
+        return f"{hours} hr{'s' if hours != 1 else ''}"
+    return f"{minutes} min{'s' if minutes != 1 else ''}"
 
 def confirm(prompt:str):
     while True:
@@ -24,16 +34,21 @@ def add_topic(topics=None, connector = None):
 
             inp = confirm("Did you mean to use one of these topics")
             if inp:
-                topic_idx = int(input("Enter topic no: "))
-                if topic_idx > 0 and topic_idx <= len(matches):
-                    topic = matches[topic_idx]
+                while True:
+                    try:
+                        topic_idx = int(input("Enter topic no: "))
+                        if isinstance(topic_idx, int):
+                            if topic_idx > 0 and topic_idx <= len(matches):
+                                topic = matches[topic_idx - 1]
+                                break
+                    except ValueError:
+                        print("Enter a valid number")
     topic_id = -1
     try:
         curr = connector.cursor()
         curr.execute(sql_commands.INSERT_TOPIC, (topic,))
         topic_id = curr.lastrowid
         connector.commit()
-        curr.close()
         print("Topic added")
     except sqlite3.Error as e:
         print("Failed to insert topic: ", e)
@@ -55,11 +70,10 @@ def pick_topic(connector):
         topic_id = add_topic(topics, connector) 
     else:
     # Use picker to get topic id
-        topics.append("Add topic")
-        idx = curses.wrapper(ui, topics)
+        idx = curses.wrapper(ui, topics + ["Add topic"])
         if idx == -1:
-            return 1
-        if idx == len(topics) - 1:
+            return -1
+        if idx == len(topics):
             topic_id = add_topic(topics, connector)
         else:
             topic_id = rows[idx][0]

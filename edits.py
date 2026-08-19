@@ -7,6 +7,7 @@ from utils import confirm, pick_topic
 def delete_session(TRACKER_DIR, session_id):
     try:
         with sqlite3.connect((TRACKER_DIR / "db/tracker.db")) as connector:
+            connector.execute("PRAGMA foreign_keys = ON")
             cursor = connector.cursor()
             cursor.execute(sql_commands.SESSION_BY_ID, (session_id,))
             row = cursor.fetchone()
@@ -42,6 +43,7 @@ def prompt_time(prompt: str, base: dt.datetime):
 def edit_session(TRACKER_DIR, session_id):
     try:
         with sqlite3.connect((TRACKER_DIR / "db/tracker.db")) as connector:
+            connector.execute("PRAGMA foreign_keys = ON")
             cursor = connector.cursor()
             cursor.execute(sql_commands.SESSION_BY_ID, (session_id,))
             row = cursor.fetchone()

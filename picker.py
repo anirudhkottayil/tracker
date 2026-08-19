@@ -6,7 +6,7 @@ import json
 def get_idx(curses, body, stdscr, width, height, topics, top, curr_len):
     current = 1
     i = top
-    body.addstr(current, 2, f"{topics[i]}",
+    body.addstr(current, 2, f"{topics[i]}"[:width - 4],
                 curses.color_pair(1) | curses.A_REVERSE)
     body.refresh()
     while True:
@@ -35,9 +35,9 @@ def get_idx(curses, body, stdscr, width, height, topics, top, curr_len):
 
             if (i + 1) >= (top + curr_len) and ((top + curr_len) < len(topics)):
                 return -2
-            body.addstr(current, 2, f"{topics[i]}",
+            body.addstr(current, 2, f"{topics[i]}"[:width - 4],
                         curses.color_pair(1))
-            body.addstr(current + 1, 2, f"{topics[i + 1]}",
+            body.addstr(current + 1, 2, f"{topics[i + 1]}"[:width - 4],
                         curses.color_pair(1) | curses.A_REVERSE)
 
             current += 1
@@ -71,13 +71,12 @@ def ui(stdscr, topics):
 
     box_length = []
     top = 0
-    itr = 1
     while True:
         length = min(visible_rows, len(topics) - top)
         body.erase()
         body.box()
         for i in range(length):
-            body.addstr(i + 1, 2, f"{topics[top + i]}", curses.color_pair(1)) 
+            body.addstr(i + 1, 2, f"{topics[top + i]}"[:width - 4], curses.color_pair(1)) 
         body.refresh()
 
         idx = get_idx(curses, body, stdscr, width, height, topics, top, length)

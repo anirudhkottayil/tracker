@@ -1,4 +1,4 @@
-from utils import add_topic, confirm, pick_topic
+from utils import add_topic, confirm, pick_topic, format_duration
 from period_flag import get_period_data, period_bounds
 from edits import delete_session, edit_session
 from pathlib import Path
@@ -33,15 +33,20 @@ def start(TRACKER_DIR):
         return 1
     return 0
 
-def format_duration(delta: dt.timedelta) -> str:
-    total_minutes = int(delta.total_seconds()) // 60
-    hours, minutes = divmod(total_minutes, 60)
-    if hours and minutes:
-        return f"{hours} hr{'s' if hours != 1 else ''} and {minutes} min{'s' if minutes != 1 else ''}"
-    if hours:
-        return f"{hours} hr{'s' if hours != 1 else ''}"
-    return f"{minutes} min{'s' if minutes != 1 else ''}"
-
+def status(TRACKER_DIR):
+    start_time = 0
+    current = dt.datetime.now(dt.timezone.utc)
+    try:
+        with open((TRACKER_DIR / ".in_session.txt"), "r") as file:
+            start_time = file.readline()
+            if start_time == "":
+                print("Not in session")
+                return
+    except OSError as e:
+        print(f"Read failed on status: {e}")
+        return 1
+    time_spent = current - dt.datetime.fromisoformat(start_time)
+    print(f"Session in progress ({format_duration(time_spent)})")  
 
 def stop(TRACKER_DIR):
     start_time = 0
@@ -52,10 +57,8 @@ def stop(TRACKER_DIR):
             if start_time == "":
                 print("Not in session")
                 return
-            file.seek(0)
-            file.truncate(0)
     except OSError as e:
-        print(f"Write failed on stop: {e}")
+        print(f"Read failed on stop: {e}")
         return 1
 
     time_spent = end_time - dt.datetime.fromisoformat(start_time)
@@ -67,6 +70,7 @@ def stop(TRACKER_DIR):
             return
     try:
         with sqlite3.connect((TRACKER_DIR / "db/tracker.db")) as connector:
+            connector.execute("PRAGMA foreign_keys = ON")
             topic_id = pick_topic(connector)
             if topic_id < 0:
                 return 1
@@ -79,6 +83,13 @@ def stop(TRACKER_DIR):
     finally:
         if connector:
             connector.close()
+    try:
+        with open((TRACKER_DIR / ".in_session.txt"), "r+") as file:
+            file.seek(0)
+            file.truncate(0)
+    except OSError as e:
+        print(f"Write failed on stop: {e}")
+        return 1
 
 def args_run(args,TRACKER_DIR, is_db):
     if args.init:
@@ -93,10 +104,13 @@ def args_run(args,TRACKER_DIR, is_db):
         return
 
     if is_db == 1:
+
         if args.start:
             start(TRACKER_DIR)
         elif args.stop:
             stop(TRACKER_DIR)
+        elif args.status:
+            status(TRACKER_DIR)
         elif args.edit is not None:
             edit_session(TRACKER_DIR, args.edit) 
         elif args.delete is not None:
