@@ -1,77 +1,76 @@
-# tracker
+<p align="center">
+  <img src="assets/banner.svg" alt="tracker — a synced CLI time tracker" width="100%">
+</p>
 
-A personal command-line time tracker. Start and stop sessions, tag each one
-with a topic, and see where the time actually went — today, this week, last
-month — as a table or a quick terminal bar graph. Built to run from two
-machines kept in sync with Syncthing, not a hosted service.
+<h1 align="center">tracker</h1>
+<p align="center">A personal command-line time tracker. Start and stop sessions, tag them with a topic, and see where the time went — kept in sync across machines with Syncthing, no server involved.</p>
 
-Every design decision behind this — the schema, why SQLite, why Syncthing
-over the alternatives, what got tried and dropped along the way — lives in
-`DESIGN.md`. This file is the short, practical version: how to install it
-and how to use it day to day.
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10+-E8A33D?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/installs%20with-pipx-B39DDB?style=flat-square" alt="Installs with pipx">
+  <img src="https://img.shields.io/github/last-commit/anirudhkottayil/tracker?style=flat-square&amp;color=4FB6A8" alt="Last commit">
+  <img src="https://img.shields.io/github/license/anirudhkottayil/tracker?style=flat-square&amp;color=4FB6A8" alt="License">
+</p>
+
+---
+
+## Features
+
+-  `--start` / `--stop` track time with two commands — a session left running for hours (a sleeping laptop, most likely) asks for confirmation before it's saved
+-  Topics come from a fuzzy-searchable picker, so a typo can't quietly create a duplicate
+-  See where the time went as a table or a terminal bar graph, by day, week, month, or year
+-  Kept in sync across two machines with Syncthing — no server, no account, no cloud
+-  Fix a mistake after the fact with `--edit` or `--delete`, instead of hand-editing the database
 
 ## Install
 
-From inside the project directory:
+Requires [Python 3.10+](https://www.python.org/downloads/) and [pipx](https://pipx.pypa.io/latest/how-to/install-pipx.html).
 
 ```
-pipx install .
+pipx install git+https://github.com/anirudhkottayil/tracker.git
 ```
-
-This installs the `tracker` command into its own isolated environment, so
-it won't collide with anything else on the system.
 
 ## First-time setup
 
 The database has to be created exactly once, on exactly one machine, before
-it's shared with the other one. Doing this out of order can let both
-machines create their own independent database at the same path, which
-Syncthing can't merge back together — see `DESIGN.md` §7.5 for the full
-reasoning. The short version:
+it's shared with the other — doing this out of order can let both machines
+create their own independent database at the same path, which Syncthing
+can't merge back together. See `DESIGN.md` §7.5 for the full reasoning.
 
 1. On one machine only: `tracker --init`
-2. Share the folder it created (`~/.local/share/tracker/db/`) in Syncthing
-   with the other machine.
-3. On the second machine, accept the incoming folder and wait for Syncthing
-   to report it fully synced.
-4. Never run `--init` again, on either machine — everything after this is
-   `--start` / `--stop` / the reporting flags.
+2. Share the folder it created (`~/.local/share/tracker/db/`) in Syncthing with the other machine
+3. On the second machine, accept the incoming folder and wait for it to report fully synced
+4. Never run `--init` again, on either machine
 
-## Commands
-
-| Command | What it does |
-|---|---|
-| `tracker --init` | One-time database setup. Refuses if one already exists. |
-| `tracker --start` | Starts a session. Refuses if one is already running. |
-| `tracker --stop` | Stops the current session and prompts for a topic. |
-| `tracker --status` | Shows whether a session is running, and for how long. |
-| `tracker --today` | Time spent today, by topic. |
-| `tracker --yesterday` | Time spent yesterday, by topic. |
-| `tracker --week` | This week so far (Monday to now). |
-| `tracker --lweek` | All of last week. |
-| `tracker --month` | This month so far. |
-| `tracker --lmonth` | All of last month. |
-| `tracker --year` | This year so far. |
-| `tracker --edit ID` | Change a session's topic, start time, or end time. |
-| `tracker --delete ID` | Delete a session, after confirming. |
-
-`--graph` and `--list` aren't commands on their own — they modify one of the
-period flags above:
+## Usage
 
 ```
-tracker --today --graph    # a bar per topic, instead of a table
-tracker --today --list     # individual sessions with their IDs, instead
-                            # of totals -- this is where the IDs for
-                            # --edit and --delete come from
+tracker --start                 # start a session
+tracker --stop                  # stop it, and pick a topic
+tracker --status                # check whether one's running
+
+tracker --today                 # time spent today, by topic
+tracker --today --list          # ...as individual sessions, with IDs
+tracker --today --graph         # ...as a bar graph
+
+tracker --edit ID               # fix a session's topic or time
+tracker --delete ID             # remove a session
 ```
 
-Sessions longer than 3 hours ask for confirmation before being saved, in
-case the machine slept and the clock kept running without you.
+`--today` works the same way with `--yesterday`, `--week`, `--lweek`, `--month`, `--lmonth`, or `--year`.
 
-## Where the data lives
+## How it works
+
+Every session is a timestamped row in a local SQLite database; the period
+flags resolve to a date range and query it, grouped by topic. That database
+lives in a folder synced across machines with Syncthing — not a hosted
+service, just two machines agreeing on one file. The full reasoning behind
+the schema, the sync strategy, and everything considered and dropped along
+the way lives in `DESIGN.md`.
+
+## Data
 
 The database is `~/.local/share/tracker/db/tracker.db` — this is the folder
 to point Syncthing at. The file that tracks whether a session is currently
-running (`~/.local/share/tracker/.in_session.txt`) deliberately lives
-outside that folder and is never synced — a session is tied to whichever
-machine it was started on. `DESIGN.md` §7.3 and §7.4 cover why.
+running lives outside that folder on purpose, and is never synced; see
+`DESIGN.md` §7.3 for why.
