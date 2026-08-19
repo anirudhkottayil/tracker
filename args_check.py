@@ -1,6 +1,6 @@
 from pathlib import Path
 import datetime as dt
-from utils import add_topic
+from utils import add_topic, confirm
 from picker import ui
 from period_flag import get_period_data
 from period_flag import period_bounds
@@ -43,6 +43,31 @@ def format_duration(delta: dt.timedelta) -> str:
         return f"{hours} hr{'s' if hours != 1 else ''}"
     return f"{minutes} min{'s' if minutes != 1 else ''}"
 
+def pick_topic(connector):
+    cursor = connector.cursor()
+    cursor.execute(sql_commands.TOPICS_BY_RECENCY)
+    rows = cursor.fetchall()
+    topics = []
+    topic_id = -1
+    for i in range(len(rows)):
+        topics.append(rows[i][1])
+    if topics == []:
+        print("No topics to choose from. Please add a new topic")
+        topic_id = add_topic(topics, connector) 
+    else:
+    # Use picker to get topic id
+        topics.append("Add topic")
+        idx = curses.wrapper(ui, topics)
+        if idx == -1:
+            return 1
+        if idx == len(topics) - 1:
+            topic_id = add_topic(topics, connector)
+        else:
+            topic_id = rows[idx][0]
+    cursor.close()
+    return topic_id
+
+
 def stop(TRACKER_DIR):
     start_time = 0
     end_time = dt.datetime.now(dt.timezone.utc)
@@ -61,41 +86,16 @@ def stop(TRACKER_DIR):
     time_spent = end_time - dt.datetime.fromisoformat(start_time)
 
     if time_spent.total_seconds() >= 10800: # Check for 3 hour mark
-        while(True):
-            add_sesh = input("Are you sure you want to add this session (y/n): ").lower()
-            if add_sesh == 'n':
-                print("Session Aborted")
-                return
-            if add_sesh == 'y':
-                break
-
-    # Get topic first using picker with fuzzy filtering
-
+        inp = confirm("Are you sure you want to add this session")
+        if not inp:
+            print("Session Aborted")
+            return
     try:
         with sqlite3.connect((TRACKER_DIR / "db/tracker.db")) as connector:
-            cursor = connector.cursor()
-            cursor.execute(sql_commands.TOPICS_BY_RECENCY)
-            rows = cursor.fetchall()
-            topics = []
-            topic_id = -1
-            for i in range(len(rows)):
-                topics.append(rows[i][1])
-            if topics == []:
-                print("No topics to choose from. Please add a new topic")
-                topic_id = add_topic(topics, connector) 
-            else:
-            # Use picker to get topic id
-                topics.append("Add topic")
-                idx = curses.wrapper(ui, topics)
-                if idx == -1:
-                    return 1
-                if idx == len(topics) - 1:
-                    topic_id = add_topic(topics, connector)
-                else:
-                    topic_id = rows[idx][0]
-
+            topic_id = pick_topic(connector)
             if topic_id < 0:
                 return 1
+            cursor = connector.cursor()
             cursor.execute(sql_commands.INSERT_SESSION, (topic_id, start_time, end_time.isoformat()))
             print(f"Session added {format_duration(time_spent)}")
     except sqlite3.OperationalError as e:
@@ -104,9 +104,6 @@ def stop(TRACKER_DIR):
     finally:
         if connector:
             connector.close()
-
-
-
 
 def args_run(args,TRACKER_DIR, is_db):
     if args.init:

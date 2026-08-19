@@ -2,6 +2,14 @@ import difflib
 from sql_commands import INSERT_TOPIC
 import sqlite3
 
+def confirm(prompt:str):
+    while True:
+    user_input = input(f"{prompt} (y/n)").strip().lower()
+    if user_input == 'y':
+        return True
+    if user_input == 'n':
+        return False
+
 def add_topic(topics=None, connector = None):
     topic = input("Enter new topic: ")
     if topics != None:
@@ -12,15 +20,11 @@ def add_topic(topics=None, connector = None):
                 final_string += f"{i+1}.{matches[i]} "
             print(final_string)
 
-            while True:
-                user_input = input("Did you mean to use one of these topics (y/n)").lower()
-                if user_input == 'n':
-                    break
-                if user_input == 'y':
-                    topic_idx = int(input("Enter topic no: "))
-                    if topic_idx > 0 and topic_idx <= len(matches):
-                        topic = matches[topic_idx]
-                        break
+            inp = confirm("Did you mean to use one of these topics")
+            if inp:
+                topic_idx = int(input("Enter topic no: "))
+                if topic_idx > 0 and topic_idx <= len(matches):
+                    topic = matches[topic_idx]
     topic_id = -1
     try:
         curr = connector.cursor()
