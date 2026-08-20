@@ -35,7 +35,7 @@ pipx install git+https://github.com/anirudhkottayil/tracker.git
 The database has to be created exactly once, on exactly one machine, before
 it's shared with the other — doing this out of order can let both machines
 create their own independent database at the same path, which Syncthing
-can't merge back together. See `DESIGN.md` §7.5 for the full reasoning.
+can't merge back together.
 
 1. On one machine only: `tracker --init`
 2. Share the folder it created (`~/.local/share/tracker/db/`) in Syncthing with the other machine
@@ -64,13 +64,9 @@ tracker --delete ID             # remove a session
 Every session is a timestamped row in a local SQLite database; the period
 flags resolve to a date range and query it, grouped by topic. That database
 lives in a folder synced across machines with Syncthing — not a hosted
-service, just two machines agreeing on one file. The full reasoning behind
-the schema, the sync strategy, and everything considered and dropped along
-the way lives in `DESIGN.md`.
+service, just two machines agreeing on one file.
 
 ## Data
 
 The database is `~/.local/share/tracker/db/tracker.db` — this is the folder
-to point Syncthing at. The file that tracks whether a session is currently
-running lives outside that folder on purpose, and is never synced; see
-`DESIGN.md` §7.3 for why.
+to point Syncthing at.
