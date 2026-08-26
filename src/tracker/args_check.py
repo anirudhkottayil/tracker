@@ -73,6 +73,13 @@ def stop(TRACKER_DIR):
             connector.execute("PRAGMA foreign_keys = ON")
             topic_id = pick_topic(connector)
             if topic_id < 0:
+                try:
+                    with open((TRACKER_DIR / ".in_session.txt"), "r+") as file:
+                        file.seek(0)
+                        file.truncate(0)
+                except OSError as e:
+                    print(f"Failed to clear in_session: {e}")
+                    return 1
                 return 1
             cursor = connector.cursor()
             cursor.execute(sql_commands.INSERT_SESSION, (topic_id, start_time, end_time.isoformat()))
