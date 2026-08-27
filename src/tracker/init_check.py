@@ -18,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="This tool is to track your computer activites")
     parser.add_argument("--init", action="store_true", help="To create a database")
     parser.add_argument("--start", action="store_true", help="To start a session")
+    parser.add_argument("--cancel", action="store_true", help="To cancel a session")
     parser.add_argument("--stop", action="store_true", help="To stop current session")
     parser.add_argument("--status", action="store_true", help="To display if in session or not")
     period = parser.add_mutually_exclusive_group()

@@ -19,6 +19,20 @@ def init(TRACKER_DIR) -> int:
         return 1
     return 0
 
+def cancel(TRACKER_DIR):
+    try:
+        with open((TRACKER_DIR / ".in_session.txt"), "r+") as file:
+            start_time = file.readline()
+            if start_time == "":
+                print("Not in session")
+                return
+            file.seek(0)
+            file.truncate(0)
+    except OSError as e:
+        print(f"Failed on cancel: {e}")
+        return 1
+    print("Session cancelled")
+
 def start(TRACKER_DIR):
     try:
         with open((TRACKER_DIR / ".in_session.txt"), "r+") as file:
@@ -116,6 +130,8 @@ def args_run(args,TRACKER_DIR, is_db):
             start(TRACKER_DIR)
         elif args.stop:
             stop(TRACKER_DIR)
+        elif args.cancel:
+            cancel(TRACKER_DIR)
         elif args.status:
             status(TRACKER_DIR)
         elif args.edit is not None:
